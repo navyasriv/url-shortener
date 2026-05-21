@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snip — URL Shortener</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0b0c0f;
+      --surface: #13151a;
+      --surface2: #1c1f27;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f0;
+      --muted: #7a7f8e;
+      --accent: #6ee7b7;
+      --accent-dark: #10b981;
+      --accent-glow: rgba(110, 231, 183, 0.15);
+      --danger: #f87171;
+      --danger-bg: rgba(248, 113, 113, 0.1);
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ─── Layout ─────────────────────────────────── */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo {
+      font-family: var(--mono);
+      font-size: 1.2rem;
+      color: var(--accent);
+      letter-spacing: -1px;
+    }
+
+    .logo span { color: var(--muted); }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent-dark);
+      margin-left: auto;
+      box-shadow: 0 0 8px var(--accent-dark);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    main {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 3rem 2rem;
+    }
+
+    /* ─── Hero / Input ───────────────────────────── */
+    .hero {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 300;
+      letter-spacing: -1.5px;
+      margin-bottom: 0.4rem;
+      line-height: 1.1;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .input-box {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 1.2rem 1.4rem;
+      transition: border-color 0.2s;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--accent-dark);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .input-row input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-row input:focus { border-color: var(--accent-dark); }
+    .input-row input::placeholder { color: var(--muted); }
+
+    .btn-shorten {
+      background: var(--accent);
+      color: #0b0c0f;
+      border: none;
+      border-radius: 10px;
+      padding: 0.75rem 1.6rem;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn-shorten:hover { opacity: 0.85; }
+    .btn-shorten:active { transform: scale(0.97); }
+    .btn-shorten:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .custom-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .custom-row label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      font-family: var(--mono);
+    }
+
+    .custom-row input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border2);
+      border-radius: 0;
+      padding: 0.25rem 0.5rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      outline: none;
+      width: 140px;
+      transition: border-color 0.2s;
+    }
+
+    .custom-row input:focus { border-color: var(--accent-dark); }
+    .custom-row input::placeholder { color: var(--muted); }
+
+    /* ─── Result Banner ──────────────────────────── */
+    .result-banner {
+      background: var(--accent-glow);
+      border: 1px solid var(--accent-dark);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-top: 1.5rem;
+      display: none;
+      align-items: center;
+      gap: 1rem;
+      animation: slideDown 0.3s ease;
+    }
+
+    .result-banner.visible { display: flex; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-url {
+      font-family: var(--mono);
+      font-size: 1rem;
+      color: var(--accent);
+      flex: 1;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.4rem 0.9rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-family: var(--mono);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .copy-btn:hover { background: var(--accent); color: #0b0c0f; }
+
+    /* ─── Stats Bar ──────────────────────────────── */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem 1.4rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.3rem;
+    }
+
+    .stat-card .value {
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .value.green { color: var(--accent); }
+    .value.white { color: var(--text); }
+
+    /* ─── URL Table ──────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .section-header h2 {
+      font-size: 0.85rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .refresh-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      padding: 0.35rem 0.75rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-family: var(--mono);
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .refresh-btn:hover { color: var(--accent); border-color: var(--accent-dark); }
+
+    .url-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .url-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: grid;
+      grid-template-columns: 120px 1fr auto auto;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color 0.2s;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .url-item:hover { border-color: var(--border2); }
+
+    .short-code {
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .short-code:hover { text-decoration: underline; }
+
+    .original {
+      font-size: 0.85rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .clicks-badge {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.2rem 0.7rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .del-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0.2rem 0.4rem;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .del-btn:hover { color: var(--danger); background: var(--danger-bg); }
+
+    /* ─── Empty State ────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+    }
+
+    .empty-state .icon { font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.4; }
+
+    /* ─── Toast ──────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 0.7rem 1.2rem;
+      font-size: 0.85rem;
+      font-family: var(--mono);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+
+    #toast.show { opacity: 1; }
+    #toast.success { border-color: var(--accent-dark); color: var(--accent); }
+    #toast.error   { border-color: var(--danger); color: var(--danger); }
+
+    /* ─── Loader ─────────────────────────────────── */
+    .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #0b0c0f; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      .stats-bar { grid-template-columns: 1fr 1fr; }
+      .url-item { grid-template-columns: 100px 1fr auto; }
+      .clicks-badge { display: none; }
+      .hero h1 { font-size: 1.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">snip<span>.io</span></div>
+  <div style="font-size:0.75rem; color:var(--muted); font-family:var(--mono);">localhost:3000</div>
+  <div class="status-dot" id="statusDot" title="Server status"></div>
+</header>
+
+<main>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Make long links<br><em>disappear.</em></h1>
+    <p>Powered by Redis cache · MongoDB storage · Node.js</p>
+
+    <div class="input-box">
+      <div class="input-row">
+        <input type="url" id="urlInput" placeholder="https://very-long-url-you-want-to-shorten.com/path?query=123" />
+        <button class="btn-shorten" id="shortenBtn" onclick="shortenUrl()">SHORTEN</button>
+      </div>
+      <div class="custom-row">
+        <label>custom alias →</label>
+        <input type="text" id="customCode" placeholder="my-link" maxlength="20" />
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-banner" id="resultBanner">
+      <span class="result-url" id="resultUrl"></span>
+      <button class="copy-btn" id="copyBtn" onclick="copyResult()">COPY</button>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="label">total links</div>
+      <div class="value white" id="statTotal">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">total clicks</div>
+      <div class="value green" id="statClicks">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">cache layer</div>
+      <div class="value green" style="font-size:1.1rem; padding-top:0.4rem;">Redis ✓</div>
+    </div>
+  </div>
+
+  <!-- URL List -->
+  <div class="section-header">
+    <h2>recent links</h2>
+    <button class="refresh-btn" onclick="loadUrls()">↻ refresh</button>
+  </div>
+
+  <div class="url-list" id="urlList">
+    <div class="empty-state">
+      <div class="icon">🔗</div>
+      <div>No links yet. Shorten your first URL above!</div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+  const API = '';  // empty = same origin (http://localhost:3000)
+
+  // ─── Shorten ───────────────────────────────────────────────────────────────
+  async function shortenUrl() {
+    const url = document.getElementById('urlInput').value.trim();
+    const customCode = document.getElementById('customCode').value.trim();
+    if (!url) return showToast('Please enter a URL', 'error');
+
+    const btn = document.getElementById('shortenBtn');
+    btn.innerHTML = '<span class="loader"></span>';
+    btn.disabled = true;
+
+    try {
+      const body = { originalUrl: url };
+      if (customCode) body.customCode = customCode;
+
+      const res = await fetch(`${API}/api/shorten`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      if (!res.ok) return showToast(data.error || 'Error', 'error');
+
+      const banner = document.getElementById('resultBanner');
+      document.getElementById('resultUrl').textContent = data.shortUrl;
+      banner.classList.add('visible');
+      banner.dataset.url = data.shortUrl;
+
+      document.getElementById('urlInput').value = '';
+      document.getElementById('customCode').value = '';
+      showToast('Short URL created!', 'success');
+      loadUrls();
+    } catch (e) {
+      showToast('Could not reach server. Is it running?', 'error');
+    } finally {
+      btn.innerHTML = 'SHORTEN';
+      btn.disabled = false;
+    }
+  }
+
+  // ─── Copy ──────────────────────────────────────────────────────────────────
+  function copyResult() {
+    const url = document.getElementById('resultUrl').textContent;
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'COPIED!';
+      setTimeout(() => btn.textContent = 'COPY', 1500);
+    });
+  }
+
+  // ─── Load URLs ─────────────────────────────────────────────────────────────
+  async function loadUrls() {
+    try {
+      const res = await fetch(`${API}/api/urls?limit=20`);
+      const data = await res.json();
+      if (!res.ok) throw new Error();
+
+      const urls = data.urls || [];
+      const totalClicks = urls.reduce((s, u) => s + u.clicks, 0);
+
+      document.getElementById('statTotal').textContent = data.pagination?.total ?? urls.length;
+      document.getElementById('statClicks').textContent = totalClicks;
+
+      const list = document.getElementById('urlList');
+
+      if (urls.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="icon">🔗</div><div>No links yet. Shorten your first URL above!</div></div>`;
+        return;
+      }
+
+      list.innerHTML = urls.map(u => `
+        <div class="url-item" id="item-${u.shortCode}">
+          <span class="short-code" onclick="openUrl('${u.shortUrl}')" title="${u.shortUrl}">/${u.shortCode}</span>
+          <span class="original" title="${u.originalUrl}">${u.originalUrl}</span>
+          <span class="clicks-badge">⚡ ${u.clicks} clicks</span>
+          <button class="del-btn" onclick="deleteUrl('${u.shortCode}')" title="Delete">✕</button>
+        </div>
+      `).join('');
+
+      document.getElementById('statusDot').style.background = '#10b981';
+    } catch {
+      document.getElementById('statusDot').style.background = '#f87171';
+    }
+  }
+
+  // ─── Delete ────────────────────────────────────────────────────────────────
+  async function deleteUrl(code) {
+    if (!confirm(`Delete /${code}?`)) return;
+    try {
+      const res = await fetch(`${API}/api/urls/${code}`, { method: 'DELETE' });
+      if (!res.ok) { showToast('Delete failed', 'error'); return; }
+      const el = document.getElementById(`item-${code}`);
+      if (el) { el.style.opacity = '0'; el.style.transform = 'scale(0.96)'; el.style.transition = '0.2s'; setTimeout(() => loadUrls(), 250); }
+      showToast(`/${code} deleted`, 'success');
+    } catch {
+      showToast('Could not reach server', 'error');
+    }
+  }
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  function openUrl(url) { window.open(url, '_blank'); }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => t.className = '', 2800);
+  }
+
+  // Enter key shortcut
+  document.getElementById('urlInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') shortenUrl();
+  });
+
+  // Initial load
+  loadUrls();
+</script>
+</body>
+</html>
